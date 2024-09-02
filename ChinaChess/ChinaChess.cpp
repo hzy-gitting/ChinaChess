@@ -15,6 +15,11 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void paintChessboard(HDC hdc);
+void paintChessBoardMiddleText(HDC hdc);
+void paintChessboardBossCrossLines(HDC hdc);
+void paintChessboardColumns(HDC hdc);
+void paintChessboardRows(HDC hdc);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -111,6 +116,12 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
+#define GRID_SIZE (50)
+#define CHESS_BOARD_ROW_COUNT (10)
+#define CHESS_BOARD_COLUMN_COUNT (9)
+#define CHESS_BOARD_HIGHT ((CHESS_BOARD_ROW_COUNT - 1) * GRID_SIZE)
+#define CHESS_BOARD_WIDTH ((CHESS_BOARD_COLUMN_COUNT - 1) * GRID_SIZE)
+
 //
 //  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -147,6 +158,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: 在此处添加使用 hdc 的任何绘图代码...
+            int offsetX = 50;
+            int offsetY = 50;
+            BOOL ret = SetWindowOrgEx(hdc, -offsetX, -offsetY, NULL);
+            if (!ret) {
+                  MessageBox(hWnd, _T("SetWindowOrgEx fail"), _T("error"), MB_OKCANCEL);
+            }
+            paintChessboard(hdc);
             EndPaint(hWnd, &ps);
         }
         break;
@@ -157,6 +175,60 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         return DefWindowProc(hWnd, message, wParam, lParam);
     }
     return 0;
+}
+
+void paintChessboard(HDC hdc)
+{
+        paintChessboardRows(hdc);
+        paintChessboardColumns(hdc);
+        paintChessboardBossCrossLines(hdc);
+        paintChessBoardMiddleText(hdc);
+}
+
+void paintChessboardRows(HDC hdc)
+{
+        for (int i = 0; i < CHESS_BOARD_ROW_COUNT; i++) {
+                int y = i * GRID_SIZE;
+                MoveToEx(hdc, 0, y, NULL);
+                LineTo(hdc, CHESS_BOARD_WIDTH, y);
+        }
+}
+void paintChessboardColumns(HDC hdc)
+{
+        MoveToEx(hdc, 0, 0, NULL);
+        LineTo(hdc, 0, CHESS_BOARD_HIGHT);
+        for (int i = 1; i < CHESS_BOARD_COLUMN_COUNT - 1; i++) {
+                int x = i * GRID_SIZE;
+                MoveToEx(hdc, x, 0, NULL);
+                LineTo(hdc, x, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE);
+                MoveToEx(hdc, x, (CHESS_BOARD_ROW_COUNT / 2) * GRID_SIZE, NULL);
+                LineTo(hdc, x, CHESS_BOARD_HIGHT);
+        }
+        MoveToEx(hdc, CHESS_BOARD_WIDTH, 0, NULL);
+        LineTo(hdc, CHESS_BOARD_WIDTH, CHESS_BOARD_HIGHT);
+}
+
+void paintChessboardBossCrossLines(HDC hdc)
+{
+
+        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 0, NULL);
+        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 2 * GRID_SIZE);
+
+        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 0, NULL);
+        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 2 * GRID_SIZE);
+
+        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 7 * GRID_SIZE, NULL);
+        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 9 * GRID_SIZE);
+
+        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 7 * GRID_SIZE, NULL);
+        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 9 * GRID_SIZE);
+}
+
+void paintChessBoardMiddleText(HDC hdc)
+{
+        SetTextAlign(hdc, VTA_CENTER);
+        TextOut(hdc, 2 * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("楚河"), 2);
+        TextOut(hdc, ((CHESS_BOARD_ROW_COUNT / 2) + 1) * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("汉界"), 2);
 }
 
 // “关于”框的消息处理程序。
