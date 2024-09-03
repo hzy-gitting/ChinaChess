@@ -15,6 +15,10 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void initPieciesName();
+void initPieciesCamp();
+void initPiecies();
+void initPieciesLocation();
 void paintChessboard(HDC hdc);
 void paintChessBoardMiddleText(HDC hdc);
 void paintChessboardBossCrossLines(HDC hdc);
@@ -31,7 +35,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     UNREFERENCED_PARAMETER(lpCmdLine);
 
     // TODO: 在此处放置代码。
-
+    initPiecies();
     // 初始化全局字符串
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CHINACHESS, szWindowClass, MAX_LOADSTRING);
@@ -121,7 +125,68 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 #define CHESS_BOARD_COLUMN_COUNT (9)
 #define CHESS_BOARD_HIGHT ((CHESS_BOARD_ROW_COUNT - 1) * GRID_SIZE)
 #define CHESS_BOARD_WIDTH ((CHESS_BOARD_COLUMN_COUNT - 1) * GRID_SIZE)
+struct Piece {
+        const char* name;
+        int camp;
+        int x;
+        int y;
+};
+#define PIECIE_COUNT (32)
+struct Piece piecies[PIECIE_COUNT];
 
+void initPiecies() {
+        initPieciesName();
+        initPieciesCamp();
+        initPieciesLocation();
+}
+void initPieciesLocation()
+{
+        for (int i = 0; i < 9; i++) {
+                piecies[i].x = i;
+                piecies[i].y = 0;
+        }
+        piecies[9].x = 1;
+        piecies[9].y = 2;
+        piecies[10].x = CHESS_BOARD_COLUMN_COUNT - 1 - 1;
+        piecies[10].y = 2;
+        for (int i = 11; i < 16; i++) {
+                piecies[i].y = 3;
+                piecies[i].x = (i - 11) * 2;
+        }
+        for (int i = 16; i < 32; i++) {
+                piecies[i].x = piecies[i - 16].x;
+                piecies[i].y = CHESS_BOARD_ROW_COUNT - 1 - piecies[i - 16].y;
+        }
+}
+void initPieciesCamp()
+{
+        for (int i = 0; i < 16; i++) {
+                piecies[i].camp = 0;
+        }
+        for (int i = 16; i < 32; i++) {
+                piecies[i].camp = 1;
+        }
+}
+void initPieciesName()
+{
+        piecies[0].name = "车";
+        piecies[1].name = "马";
+        piecies[2].name = "象";
+        piecies[3].name = "士";
+        piecies[4].name = "将";
+        piecies[5].name = "士";
+        piecies[6].name = "象";
+        piecies[7].name = "马";
+        piecies[8].name = "车";
+        piecies[9].name = "炮";
+        piecies[10].name = "炮";
+        for (int i = 11; i < 16; i++) {
+                piecies[i].name = "兵";
+        }
+        for (int i = 16; i < 32; i++) {
+                piecies[i].name = piecies[i - 16].name;
+        }
+}
 //
 //  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -165,6 +230,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                   MessageBox(hWnd, _T("SetWindowOrgEx fail"), _T("error"), MB_OKCANCEL);
             }
             paintChessboard(hdc);
+            for (int i = 0; i < 32; i++) {
+                    HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+                    SelectObject(hdc, hPen);
+                    if (piecies[i].camp == 0) {
+                            SetTextColor(hdc, RGB(255, 0, 0));
+                    }
+                    else {
+                            SetTextColor(hdc, RGB(0, 0, 0));
+                    }
+                    TextOutA(hdc, piecies[i].x * GRID_SIZE, piecies[i].y * GRID_SIZE, piecies[i].name, 2);
+            }
             EndPaint(hWnd, &ps);
         }
         break;
@@ -226,7 +302,7 @@ void paintChessboardBossCrossLines(HDC hdc)
 
 void paintChessBoardMiddleText(HDC hdc)
 {
-        SetTextAlign(hdc, VTA_CENTER);
+        SetTextAlign(hdc, VTA_CENTER |VTA_BASELINE);
         TextOut(hdc, 2 * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("楚河"), 2);
         TextOut(hdc, ((CHESS_BOARD_ROW_COUNT / 2) + 1) * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("汉界"), 2);
 }
