@@ -3,7 +3,7 @@
 
 #include "framework.h"
 #include "ChinaChess.h"
-
+#include<Windowsx.h>
 #define MAX_LOADSTRING 100
 
 // 全局变量:
@@ -15,6 +15,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void paintPiecies(HDC hdc);
 void initPieciesName();
 void initPieciesCamp();
 void initPiecies();
@@ -139,34 +140,7 @@ void initPiecies() {
         initPieciesCamp();
         initPieciesLocation();
 }
-void initPieciesLocation()
-{
-        for (int i = 0; i < 9; i++) {
-                piecies[i].x = i;
-                piecies[i].y = 0;
-        }
-        piecies[9].x = 1;
-        piecies[9].y = 2;
-        piecies[10].x = CHESS_BOARD_COLUMN_COUNT - 1 - 1;
-        piecies[10].y = 2;
-        for (int i = 11; i < 16; i++) {
-                piecies[i].y = 3;
-                piecies[i].x = (i - 11) * 2;
-        }
-        for (int i = 16; i < 32; i++) {
-                piecies[i].x = piecies[i - 16].x;
-                piecies[i].y = CHESS_BOARD_ROW_COUNT - 1 - piecies[i - 16].y;
-        }
-}
-void initPieciesCamp()
-{
-        for (int i = 0; i < 16; i++) {
-                piecies[i].camp = 0;
-        }
-        for (int i = 16; i < 32; i++) {
-                piecies[i].camp = 1;
-        }
-}
+
 void initPieciesName()
 {
         piecies[0].name = "车";
@@ -187,6 +161,50 @@ void initPieciesName()
                 piecies[i].name = piecies[i - 16].name;
         }
 }
+
+void initPieciesCamp()
+{
+        for (int i = 0; i < 16; i++) {
+                piecies[i].camp = 0;
+        }
+        for (int i = 16; i < 32; i++) {
+                piecies[i].camp = 1;
+        }
+}
+
+void initPieciesLocation()
+{
+        for (int i = 0; i < 9; i++) {
+                piecies[i].x = i;
+                piecies[i].y = 0;
+        }
+        piecies[9].x = 1;
+        piecies[9].y = 2;
+        piecies[10].x = CHESS_BOARD_COLUMN_COUNT - 1 - 1;
+        piecies[10].y = 2;
+        for (int i = 11; i < 16; i++) {
+                piecies[i].y = 3;
+                piecies[i].x = (i - 11) * 2;
+        }
+        for (int i = 16; i < 32; i++) {
+                piecies[i].x = piecies[i - 16].x;
+                piecies[i].y = CHESS_BOARD_ROW_COUNT - 1 - piecies[i - 16].y;
+        }
+}
+
+
+int getPieceIndexByChessCoordinate(int x_cc,int y_cc) {
+        for (int i = 0; i < PIECIE_COUNT; i++) {
+                if (piecies[i].x == x_cc && piecies[i].y == y_cc) {
+                        return i;
+                }
+        }
+        return -1;
+}
+
+int status = 0;
+int pieceSelectedIndex = -1;
+
 //
 //  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
 //
@@ -218,6 +236,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
         }
         break;
+    case WM_LBUTTONDOWN:
+    {
+            int x = GET_X_LPARAM(lParam);
+            int y = GET_Y_LPARAM(lParam);
+            x = x - 50;
+            y = y - 50;
+            int x_cc = x / GRID_SIZE + (x % GRID_SIZE > (GRID_SIZE / 2.0) ? 1 : 0);\
+            int y_cc = y / GRID_SIZE + (y % GRID_SIZE > (GRID_SIZE / 2.0) ? 1 : 0);
+            if (status == 0) {
+                    pieceSelectedIndex = getPieceIndexByChessCoordinate(x_cc, y_cc);
+                    if (pieceSelectedIndex != -1) {
+                            status = 1;
+                    }
+            }
+            else if (status == 1) {
+                    if (x_cc < 0 || y_cc < 0 || x_cc >= CHESS_BOARD_COLUMN_COUNT || y_cc >= CHESS_BOARD_ROW_COUNT) {
+                            status = 0;
+                    }
+                    else {
+                            piecies[pieceSelectedIndex].x = x_cc;
+                            piecies[pieceSelectedIndex].y = y_cc;
+                            status = 0;
+                            InvalidateRect(hWnd, NULL, TRUE);
+                            UpdateWindow(hWnd);
+                    }
+            }
+    }
     case WM_PAINT:
         {
             PAINTSTRUCT ps;
@@ -230,17 +275,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                   MessageBox(hWnd, _T("SetWindowOrgEx fail"), _T("error"), MB_OKCANCEL);
             }
             paintChessboard(hdc);
-            for (int i = 0; i < 32; i++) {
-                    HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
-                    SelectObject(hdc, hPen);
-                    if (piecies[i].camp == 0) {
-                            SetTextColor(hdc, RGB(255, 0, 0));
-                    }
-                    else {
-                            SetTextColor(hdc, RGB(0, 0, 0));
-                    }
-                    TextOutA(hdc, piecies[i].x * GRID_SIZE, piecies[i].y * GRID_SIZE, piecies[i].name, 2);
-            }
+            paintPiecies(hdc);
             EndPaint(hWnd, &ps);
         }
         break;
@@ -260,6 +295,7 @@ void paintChessboard(HDC hdc)
         paintChessboardBossCrossLines(hdc);
         paintChessBoardMiddleText(hdc);
 }
+
 
 void paintChessboardRows(HDC hdc)
 {
@@ -307,6 +343,20 @@ void paintChessBoardMiddleText(HDC hdc)
         TextOut(hdc, ((CHESS_BOARD_ROW_COUNT / 2) + 1) * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("汉界"), 2);
 }
 
+void paintPiecies(HDC hdc)
+{
+        for (int i = 0; i < 32; i++) {
+                HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+                SelectObject(hdc, hPen);
+                if (piecies[i].camp == 0) {
+                        SetTextColor(hdc, RGB(255, 0, 0));
+                }
+                else {
+                        SetTextColor(hdc, RGB(0, 0, 0));
+                }
+                TextOutA(hdc, piecies[i].x * GRID_SIZE, piecies[i].y * GRID_SIZE, piecies[i].name, 2);
+        }
+}
 // “关于”框的消息处理程序。
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
