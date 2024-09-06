@@ -125,9 +125,10 @@ struct Piece {
         int camp;
         int x;
         int y;
+        int selected;
 };
-#define PIECIE_COUNT (32)
-struct Piece piecies[PIECIE_COUNT];
+#define PIECE_COUNT (32)
+struct Piece piecies[PIECE_COUNT];
 
 void initPiecies() {
         initPieciesName();
@@ -166,6 +167,13 @@ void initPieciesCamp()
         }
 }
 
+void initPieciesSelected()
+{
+        for (int i = 0; i < 32; i++) {
+                piecies[i].selected = 0;
+        }
+}
+
 void initPieciesLocation()
 {
         for (int i = 0; i < 9; i++) {
@@ -190,7 +198,10 @@ void paintPiecies(HDC hdc)
         for (int i = 0; i < 32; i++) {
                 HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
                 SelectObject(hdc, hPen);
-                if (piecies[i].camp == 0) {
+                if (piecies[i].selected == 1) {
+                        SetTextColor(hdc, RGB(255, 255, 0));
+                }
+                else if (piecies[i].camp == 0) {
                         SetTextColor(hdc, RGB(255, 0, 0));
                 }
                 else {
@@ -200,13 +211,23 @@ void paintPiecies(HDC hdc)
         }
 }
 
-int getPieceIndexByChessCoordinate(int x_cc,int y_cc) {
-        for (int i = 0; i < PIECIE_COUNT; i++) {
-                if (piecies[i].x == x_cc && piecies[i].y == y_cc) {
+int getPieceIndexByChessCoordinate(POINT cc) {
+        for (int i = 0; i < PIECE_COUNT; i++) {
+                if (piecies[i].x == cc.x && piecies[i].y == cc.y) {
                         return i;
                 }
         }
         return -1;
+}
+void movePiece(int index, POINT target) {
+        piecies[index].x = target.x;
+        piecies[index].y = target.y;
+}
+POINT pixelCoordToChessCoord(POINT pxc) {
+        POINT cc;
+        cc.x = pxc.x / GRID_SIZE + (abs(pxc.x % GRID_SIZE) > (GRID_SIZE / 2.0) ? (pxc.x > 0 ? 1 : -1) : 0);
+        cc.y = pxc.y / GRID_SIZE + (abs(pxc.y % GRID_SIZE) > (GRID_SIZE / 2.0) ? (pxc.y > 0 ? 1 : -1) : 0);
+        return cc;
 }
 
 int status = 0;
@@ -249,21 +270,30 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             int y = GET_Y_LPARAM(lParam);
             x = x - 50;
             y = y - 50;
-            int x_cc = x / GRID_SIZE + (x % GRID_SIZE > (GRID_SIZE / 2.0) ? 1 : 0);\
-            int y_cc = y / GRID_SIZE + (y % GRID_SIZE > (GRID_SIZE / 2.0) ? 1 : 0);
+            POINT pxc;
+            pxc.x = x;
+            pxc.y = y;
+            POINT cc = pixelCoordToChessCoord(pxc);
             if (status == 0) {
-                    pieceSelectedIndex = getPieceIndexByChessCoordinate(x_cc, y_cc);
+                    pieceSelectedIndex = getPieceIndexByChessCoordinate(cc);
                     if (pieceSelectedIndex != -1) {
+                            piecies[pieceSelectedIndex].selected = 1;
                             status = 1;
+                            InvalidateRect(hWnd, NULL, TRUE);
+                            UpdateWindow(hWnd);
+                    }
+                    else {
+                            MessageBox(hWnd, _T("out of any chess piece!"), _T("error"), MB_OKCANCEL);
                     }
             }
             else if (status == 1) {
-                    if (x_cc < 0 || y_cc < 0 || x_cc >= CHESS_BOARD_COLUMN_COUNT || y_cc >= CHESS_BOARD_ROW_COUNT) {
+                    if (cc.x < 0 || cc.y < 0 || cc.x >= CHESS_BOARD_COLUMN_COUNT || cc.y >= CHESS_BOARD_ROW_COUNT) {
+                            MessageBox(hWnd, _T("out of chessboard!"), _T("error"), MB_OKCANCEL);
                             status = 0;
                     }
                     else {
-                            piecies[pieceSelectedIndex].x = x_cc;
-                            piecies[pieceSelectedIndex].y = y_cc;
+                            movePiece(pieceSelectedIndex,cc);
+                            piecies[pieceSelectedIndex].selected = 0;
                             status = 0;
                             InvalidateRect(hWnd, NULL, TRUE);
                             UpdateWindow(hWnd);
