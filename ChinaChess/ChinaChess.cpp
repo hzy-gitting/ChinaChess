@@ -4,6 +4,9 @@
 #include "framework.h"
 #include "ChinaChess.h"
 #include<Windowsx.h>
+#include"const.h"
+#include"paintChessboard.h"
+
 #define MAX_LOADSTRING 100
 
 // 全局变量:
@@ -20,11 +23,7 @@ void initPieciesName();
 void initPieciesCamp();
 void initPiecies();
 void initPieciesLocation();
-void paintChessboard(HDC hdc);
-void paintChessBoardMiddleText(HDC hdc);
-void paintChessboardBossCrossLines(HDC hdc);
-void paintChessboardColumns(HDC hdc);
-void paintChessboardRows(HDC hdc);
+
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -121,11 +120,6 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    return TRUE;
 }
 
-#define GRID_SIZE (50)
-#define CHESS_BOARD_ROW_COUNT (10)
-#define CHESS_BOARD_COLUMN_COUNT (9)
-#define CHESS_BOARD_HIGHT ((CHESS_BOARD_ROW_COUNT - 1) * GRID_SIZE)
-#define CHESS_BOARD_WIDTH ((CHESS_BOARD_COLUMN_COUNT - 1) * GRID_SIZE)
 struct Piece {
         const char* name;
         int camp;
@@ -191,7 +185,20 @@ void initPieciesLocation()
                 piecies[i].y = CHESS_BOARD_ROW_COUNT - 1 - piecies[i - 16].y;
         }
 }
-
+void paintPiecies(HDC hdc)
+{
+        for (int i = 0; i < 32; i++) {
+                HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+                SelectObject(hdc, hPen);
+                if (piecies[i].camp == 0) {
+                        SetTextColor(hdc, RGB(255, 0, 0));
+                }
+                else {
+                        SetTextColor(hdc, RGB(0, 0, 0));
+                }
+                TextOutA(hdc, piecies[i].x * GRID_SIZE, piecies[i].y * GRID_SIZE, piecies[i].name, 2);
+        }
+}
 
 int getPieceIndexByChessCoordinate(int x_cc,int y_cc) {
         for (int i = 0; i < PIECIE_COUNT; i++) {
@@ -288,75 +295,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     return 0;
 }
 
-void paintChessboard(HDC hdc)
-{
-        paintChessboardRows(hdc);
-        paintChessboardColumns(hdc);
-        paintChessboardBossCrossLines(hdc);
-        paintChessBoardMiddleText(hdc);
-}
-
-
-void paintChessboardRows(HDC hdc)
-{
-        for (int i = 0; i < CHESS_BOARD_ROW_COUNT; i++) {
-                int y = i * GRID_SIZE;
-                MoveToEx(hdc, 0, y, NULL);
-                LineTo(hdc, CHESS_BOARD_WIDTH, y);
-        }
-}
-void paintChessboardColumns(HDC hdc)
-{
-        MoveToEx(hdc, 0, 0, NULL);
-        LineTo(hdc, 0, CHESS_BOARD_HIGHT);
-        for (int i = 1; i < CHESS_BOARD_COLUMN_COUNT - 1; i++) {
-                int x = i * GRID_SIZE;
-                MoveToEx(hdc, x, 0, NULL);
-                LineTo(hdc, x, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE);
-                MoveToEx(hdc, x, (CHESS_BOARD_ROW_COUNT / 2) * GRID_SIZE, NULL);
-                LineTo(hdc, x, CHESS_BOARD_HIGHT);
-        }
-        MoveToEx(hdc, CHESS_BOARD_WIDTH, 0, NULL);
-        LineTo(hdc, CHESS_BOARD_WIDTH, CHESS_BOARD_HIGHT);
-}
-
-void paintChessboardBossCrossLines(HDC hdc)
-{
-
-        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 0, NULL);
-        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 2 * GRID_SIZE);
-
-        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 0, NULL);
-        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 2 * GRID_SIZE);
-
-        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 7 * GRID_SIZE, NULL);
-        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 9 * GRID_SIZE);
-
-        MoveToEx(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) + 1) * GRID_SIZE, 7 * GRID_SIZE, NULL);
-        LineTo(hdc, ((CHESS_BOARD_COLUMN_COUNT / 2) - 1) * GRID_SIZE, 9 * GRID_SIZE);
-}
-
-void paintChessBoardMiddleText(HDC hdc)
-{
-        SetTextAlign(hdc, VTA_CENTER |VTA_BASELINE);
-        TextOut(hdc, 2 * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("楚河"), 2);
-        TextOut(hdc, ((CHESS_BOARD_ROW_COUNT / 2) + 1) * GRID_SIZE, ((CHESS_BOARD_ROW_COUNT / 2) - 1) * GRID_SIZE + (GRID_SIZE / 2), _T("汉界"), 2);
-}
-
-void paintPiecies(HDC hdc)
-{
-        for (int i = 0; i < 32; i++) {
-                HPEN hPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
-                SelectObject(hdc, hPen);
-                if (piecies[i].camp == 0) {
-                        SetTextColor(hdc, RGB(255, 0, 0));
-                }
-                else {
-                        SetTextColor(hdc, RGB(0, 0, 0));
-                }
-                TextOutA(hdc, piecies[i].x * GRID_SIZE, piecies[i].y * GRID_SIZE, piecies[i].name, 2);
-        }
-}
 // “关于”框的消息处理程序。
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {

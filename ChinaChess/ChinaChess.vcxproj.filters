@@ -27,9 +27,18 @@
     <ClInclude Include="ChinaChess.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="const.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="paintChessboard.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ChinaChess.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="paintChessboard.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
