@@ -18,6 +18,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+void changeCurCamp();
 void paintPiecies(HDC hdc);
 void initPieciesName();
 void initPieciesCamp();
@@ -240,6 +241,12 @@ POINT pixelCoordToChessCoord(POINT pxc) {
 
 int status = 0;
 int pieceSelectedIndex = -1;
+int curCamp = 0;
+
+void changeCurCamp()
+{
+	curCamp = ((curCamp == 0) ? 1 : 0);
+}
 enum Status {
 	SELECT_NONE,
 	SELECT_ONE,
@@ -285,10 +292,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		pxc.x = x;
 		pxc.y = y;
 		POINT cc = pixelCoordToChessCoord(pxc);
+		if (cc.x < 0 || cc.y < 0 || cc.x >= CHESS_BOARD_COLUMN_COUNT || cc.y >= CHESS_BOARD_ROW_COUNT) {
+			MessageBox(hWnd, _T("out of chessboard!"), _T("error"), MB_OKCANCEL);
+			break;
+		}
 		int newPieceSelectedIndex = getPieceIndexByChessCoordinate(cc);
+		
 		if (status == SELECT_NONE) {
 			if (newPieceSelectedIndex == -1) {
 				MessageBox(hWnd, _T("out of any chess piece!"), _T("error"), MB_OKCANCEL);
+				break;
+			}
+			if (curCamp != piecies[newPieceSelectedIndex].camp) {
+				MessageBox(hWnd, _T("not cur camp!"), _T("error"), MB_OKCANCEL);
 				break;
 			}
 			pieceSelectedIndex = newPieceSelectedIndex;
@@ -296,18 +312,18 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			status = SELECT_ONE;
 		}
 		else if (status == SELECT_ONE) {
-			if (cc.x < 0 || cc.y < 0 || cc.x >= CHESS_BOARD_COLUMN_COUNT || cc.y >= CHESS_BOARD_ROW_COUNT) {
-				MessageBox(hWnd, _T("out of chessboard!"), _T("error"), MB_OKCANCEL);
-				break;
-			}
 			unselectPiece(pieceSelectedIndex);
-			if (newPieceSelectedIndex != -1 && newPieceSelectedIndex != pieceSelectedIndex) {
+			if (newPieceSelectedIndex == pieceSelectedIndex) {
+				status = SELECT_NONE;
+			}
+			else if (newPieceSelectedIndex != -1 && curCamp == piecies[newPieceSelectedIndex].camp) {
 				selectPiece(newPieceSelectedIndex);
 				pieceSelectedIndex = newPieceSelectedIndex;
 			}
-			else {
+			else  {
 				movePiece(pieceSelectedIndex, cc);
 				status = SELECT_NONE;
+				changeCurCamp();
 			}
 		}
 		InvalidateRect(hWnd, NULL, TRUE);
@@ -337,6 +353,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 }
+
 
 // “关于”框的消息处理程序。
 INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
