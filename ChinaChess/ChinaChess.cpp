@@ -285,38 +285,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		pxc.x = x;
 		pxc.y = y;
 		POINT cc = pixelCoordToChessCoord(pxc);
+		int newPieceSelectedIndex = getPieceIndexByChessCoordinate(cc);
 		if (status == SELECT_NONE) {
-			pieceSelectedIndex = getPieceIndexByChessCoordinate(cc);
-			if (pieceSelectedIndex != -1) {
-				selectPiece(pieceSelectedIndex);
-				status = SELECT_ONE;
-				InvalidateRect(hWnd, NULL, TRUE);
-				UpdateWindow(hWnd);
-			}
-			else {
+			if (newPieceSelectedIndex == -1) {
 				MessageBox(hWnd, _T("out of any chess piece!"), _T("error"), MB_OKCANCEL);
+				break;
 			}
+			pieceSelectedIndex = newPieceSelectedIndex;
+			selectPiece(pieceSelectedIndex);
+			status = SELECT_ONE;
 		}
 		else if (status == SELECT_ONE) {
 			if (cc.x < 0 || cc.y < 0 || cc.x >= CHESS_BOARD_COLUMN_COUNT || cc.y >= CHESS_BOARD_ROW_COUNT) {
 				MessageBox(hWnd, _T("out of chessboard!"), _T("error"), MB_OKCANCEL);
+				break;
+			}
+			unselectPiece(pieceSelectedIndex);
+			if (newPieceSelectedIndex != -1 && newPieceSelectedIndex != pieceSelectedIndex) {
+				selectPiece(newPieceSelectedIndex);
+				pieceSelectedIndex = newPieceSelectedIndex;
 			}
 			else {
-				int newPieceSelectedIndex = getPieceIndexByChessCoordinate(cc);
-				if (newPieceSelectedIndex != -1) {
-					unselectPiece(pieceSelectedIndex);
-					selectPiece(newPieceSelectedIndex);
-					pieceSelectedIndex = newPieceSelectedIndex;
-				}
-				else {
-					movePiece(pieceSelectedIndex, cc);
-					unselectPiece(pieceSelectedIndex);
-					status = SELECT_NONE;
-				}
-				InvalidateRect(hWnd, NULL, TRUE);
-				UpdateWindow(hWnd);
+				movePiece(pieceSelectedIndex, cc);
+				status = SELECT_NONE;
 			}
 		}
+		InvalidateRect(hWnd, NULL, TRUE);
+		UpdateWindow(hWnd);
 	}
 	case WM_PAINT:
 	{
